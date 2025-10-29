@@ -1,0 +1,13 @@
+# Archivos sensibles y temporales
+.env
+*.log
+*.tmp
+
+# Archivos de compilación
+/bin/
+/dist/
+/*.exe
+
+# Carpetas sensibles y temporales
+logs/
+tmp/
