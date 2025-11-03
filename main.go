@@ -46,6 +46,8 @@ func main() {
 
 	// Ruta general sin grupo
 	router.GET("/hola", rutas.Saludar)
+	router.GET("/hola/:nombre", rutas.Saludar_con_nombre)
+	router.GET("/query-string", rutas.Query_string)
 
 	// Grupo prefijo
 	apiV1 := router.Group(prefijo)
