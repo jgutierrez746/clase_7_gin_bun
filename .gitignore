@@ -2,6 +2,9 @@
 .env
 *.log
 *.tmp
+*.jpg
+*.png
+*.jpeg
 
 # Archivos de compilación
 /bin/

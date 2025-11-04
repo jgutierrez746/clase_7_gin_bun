@@ -2,7 +2,9 @@ package rutas
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -72,5 +74,28 @@ func Query_string(c *gin.Context) {
 	slug := c.Query("slug")
 	c.JSON(http.StatusOK, gin.H{
 		"mensaje": "Parámetros Query String | id = " + id + " | slug = " + slug,
+	})
+}
+
+// Ejemplo de carga de archivos al servidor
+func Ejemplo_upload(c *gin.Context) {
+	file, err := c.FormFile("foto")
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"mensaje": "Ocurrió un error inesperado!",
+		})
+		return
+	}
+
+	var extension = strings.Split(file.Filename, ".")[1]
+	unixTime := time.Now().Unix()
+	nombreArchivo := strconv.FormatInt(unixTime, 10) + "." + extension
+	var archivo string = "public/upload/fotos/" + nombreArchivo
+
+	c.SaveUploadedFile(file, archivo)
+
+	c.JSON(http.StatusOK, gin.H{
+		"mensaje":     "Archivo cargado exitosamente",
+		"nombre_foto": nombreArchivo,
 	})
 }

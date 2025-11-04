@@ -44,10 +44,14 @@ func main() {
 	// Crear router
 	router := gin.Default()
 
-	// Ruta general sin grupo
+	// Ruta para archivos estaticos
+	router.Static("/fotos", "./public/upload/fotos")
+
+	// Ruta general sin grupo - varios ejemplos
 	router.GET("/hola", rutas.Saludar)
 	router.GET("/hola/:nombre", rutas.Saludar_con_nombre)
 	router.GET("/query-string", rutas.Query_string)
+	router.POST("/upload", rutas.Ejemplo_upload)
 
 	// Grupo prefijo
 	apiV1 := router.Group(prefijo)
