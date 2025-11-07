@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"reflect"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/uptrace/bun"
@@ -38,20 +40,38 @@ func InitDB(dsn string) error {
 
 // SelectAll realiza un SELECT de todas las filas de una tabla y las escanea en un slice de structs.
 // Ej: var users []User; err := SelectAll(ctx, "users", &users)
-func SelectAll(ctx context.Context, table string, dest interface{}) error {
+func SelectAll(ctx context.Context, tableName string, dest interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("db no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
-	return DB.NewSelect().Table(table).Scan(ctx, dest)
+
+	// Inferir nombre de talba si no se proporciona
+	if tableName == "" {
+		tableName = inferTableName(dest)
+		if tableName == "" {
+			return fmt.Errorf("nombre de tabla no proporcionado ni inferido del tag bun:table")
+		}
+	}
+
+	return DB.NewSelect().Table(tableName).Scan(ctx, dest)
 }
 
 // SelectOne realiza un SELECT de una sola fila de una tabla con clausula WHERE.
 // Ej: var users User; err := SelectOne(ctx, "users", &user, "id = ?", 1)
-func SelectOne(ctx context.Context, table string, dest interface{}, where string, args ...interface{}) error {
+func SelectOne(ctx context.Context, tableName string, dest interface{}, where string, args ...interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
-	q := DB.NewSelect().Table(table).Where(where, args...)
+
+	// Inferir nombre de talba si no se proporciona
+	if tableName == "" {
+		tableName = inferTableName(dest)
+		if tableName == "" {
+			return fmt.Errorf("nombre de tabla no proporcionado ni inferido del tag bun:table")
+		}
+	}
+
+	q := DB.NewSelect().Table(tableName).Where(where, args...)
 	return q.Scan(ctx, dest)
 }
 
@@ -107,4 +127,86 @@ func SelectConJoin(ctx context.Context, mainTable string, joins []string, dest i
 		q = q.Where(where, args...)
 	}
 	return q.Scan(ctx, dest)
+}
+
+// Insert inserta un modelo (struct) en la tabla (infiriendo del tag bun:table)
+// Bun maneja autoincrement (ID)
+func Insert(ctx context.Context, model interface{}) error {
+	if DB == nil {
+		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
+	}
+
+	_, err := DB.NewInsert().Model(model).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("error insertando: %w", err)
+	}
+	log.Printf("Registro insertado exitosamente en tabla inferida del modelo.")
+	return nil
+}
+
+// InsertBatch inserta múltiples modelos en batch (más eficiente para muchos registros)
+func InsertBatch(ctx context.Context, models ...interface{}) error {
+	if DB == nil {
+		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
+	}
+
+	_, err := DB.NewInsert().Model(&models).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("error insertando batch: %w", err)
+	}
+	log.Printf("Batch de %d registros insertado exitosamente.", len(models))
+	return nil
+}
+
+func CreateTable(ctx context.Context, tableName string, model interface{}) error {
+	if DB == nil {
+		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
+	}
+
+	// Inferir nombre de talba si no se proporciona
+	if tableName == "" {
+		tableName = inferTableName(model)
+		if tableName == "" {
+			return fmt.Errorf("nombre de tabla no proporcionado ni inferido del tag bun:table")
+		}
+	}
+
+	_, err := DB.NewCreateTable().Table(tableName).Model(model).IfNotExists().Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("error creando tabla %s: %w", tableName, err)
+	}
+	log.Printf("Tabla %s creada exitosamente con esquema del modelo.", tableName)
+	return nil
+}
+
+func inferTableName(model interface{}) string {
+	rt := reflect.TypeOf(model)
+	if rt == nil {
+		return ""
+	}
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+	}
+
+	// Si es slice, ve al tipo del elemento
+	if rt.Kind() == reflect.Slice {
+		rt = rt.Elem()
+	}
+
+	if rt.Kind() != reflect.Struct {
+		return ""
+	}
+
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		tag := field.Tag.Get("bun")
+		if tag != "" && strings.Contains(tag, "table:") {
+			parts := strings.Split(tag, "table:")[1]
+			if idx := strings.Index(parts, ","); idx > 0 {
+				return strings.TrimSpace(parts[:idx])
+			}
+			return strings.TrimSpace(parts)
+		}
+	}
+	return ""
 }
