@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jgutierrez746/clase_7_gin_bun/config"
 	"github.com/jgutierrez746/clase_7_gin_bun/db"
 	"github.com/jgutierrez746/clase_7_gin_bun/modelos"
 	"github.com/jgutierrez746/clase_7_gin_bun/rutas"
@@ -31,6 +32,9 @@ func adminMiddleware(c *gin.Context) {
 var prefijo = "/api/v1"
 
 func main() {
+	// Carga Zona horaria Chile
+	config.Init()
+
 	// Cargar variables de entorno desde -env
 	if err := godotenv.Load(); err != nil {
 		log.Println("No se encontró .env, usando valores por defeto")
@@ -74,7 +78,7 @@ func main() {
 	// Crear tablas en BDD
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := db.CreateTable(ctx, "", &modelos.TematicasModel{}); err != nil {
+	if err := db.CreateTable(ctx, &modelos.TematicasModel{}); err != nil {
 		log.Fatal(err)
 	}
 
@@ -104,6 +108,8 @@ func main() {
 			tematicasGroup.GET("", rutas.ConsultarTematicas)
 			tematicasGroup.GET("/:id", rutas.ConsultarTematicasPorId)
 			tematicasGroup.POST("", rutas.CrearTematica)
+			tematicasGroup.PUT("/:id", rutas.EditarTematica)
+			tematicasGroup.DELETE("/:id", rutas.EliminarTematica)
 		}
 		/*
 			// Grupo 1 users
