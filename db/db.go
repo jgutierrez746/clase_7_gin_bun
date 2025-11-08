@@ -40,54 +40,41 @@ func InitDB(dsn string) error {
 
 // SelectAll realiza un SELECT de todas las filas de una tabla y las escanea en un slice de structs.
 // Ej: var users []User; err := SelectAll(ctx, "users", &users)
-func SelectAll(ctx context.Context, tableName string, dest interface{}) error {
+func SelectAll(ctx context.Context, table string, dest interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("db no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
 
-	// Inferir nombre de talba si no se proporciona
-	if tableName == "" {
-		tableName = inferTableName(dest)
-		if tableName == "" {
-			return fmt.Errorf("nombre de tabla no proporcionado ni inferido del tag bun:table")
-		}
-	}
-
-	return DB.NewSelect().Table(tableName).Scan(ctx, dest)
+	return DB.NewSelect().Table(table).OrderExpr("id DESC").Scan(ctx, dest)
 }
 
 // SelectOne realiza un SELECT de una sola fila de una tabla con clausula WHERE.
 // Ej: var users User; err := SelectOne(ctx, "users", &user, "id = ?", 1)
-func SelectOne(ctx context.Context, tableName string, dest interface{}, where string, args ...interface{}) error {
+func SelectOne(ctx context.Context, table string, dest interface{}, where string, args ...interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
 
-	// Inferir nombre de talba si no se proporciona
-	if tableName == "" {
-		tableName = inferTableName(dest)
-		if tableName == "" {
-			return fmt.Errorf("nombre de tabla no proporcionado ni inferido del tag bun:table")
-		}
-	}
-
-	q := DB.NewSelect().Table(tableName).Where(where, args...)
+	q := DB.NewSelect().Table(table).Where(where, args...)
 	return q.Scan(ctx, dest)
 }
 
 // Update actualiza filas en una tabla usando un modelo (struct) y cláusula WHERE.
-// Retorna el número de filas afectadas (int64).
 // Ej: user.Name = "Nuevo"; affected, err := Update(ctx, "users", &user, "id = ?", user.ID)
 func Update(ctx context.Context, table string, model interface{}, where string, args ...interface{}) (int64, error) {
 	if DB == nil {
 		return 0, fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
-	q := DB.NewUpdate().Table(table).Model(model).Where(where, args...)
+
+	q := DB.NewUpdate().Model(model).ModelTableExpr(table).Where(where, args...)
 	res, err := q.Exec(ctx)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error actualizando: %w", err)
 	}
-	return res.RowsAffected()
+
+	filasAfectadas, _ := res.RowsAffected() // Ignoramos el error
+	log.Printf("Registro actualizado en tabla %s con WHERE: %s", table, where)
+	return filasAfectadas, nil
 }
 
 // Delete borra filas de una tabla con cláusula WHERE.
@@ -97,12 +84,16 @@ func Delete(ctx context.Context, table string, where string, args ...interface{}
 	if DB == nil {
 		return 0, fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
+
 	q := DB.NewDelete().Table(table).Where(where, args...)
 	res, err := q.Exec(ctx)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error eliminando: %w", err)
 	}
-	return res.RowsAffected()
+
+	filasAfectadas, _ := res.RowsAffected() // Se ignora el error
+	log.Printf("%d registos eliminados de la tabla %s con WHERE: %s", filasAfectadas, table, where)
+	return filasAfectadas, nil
 }
 
 // SelectWithJoin realiza un SELECT con JOINs en una tabla principal, escaneando en un slice de structs.
@@ -131,12 +122,12 @@ func SelectConJoin(ctx context.Context, mainTable string, joins []string, dest i
 
 // Insert inserta un modelo (struct) en la tabla (infiriendo del tag bun:table)
 // Bun maneja autoincrement (ID)
-func Insert(ctx context.Context, model interface{}) error {
+func Insert(ctx context.Context, table string, model interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
 
-	_, err := DB.NewInsert().Model(model).Exec(ctx)
+	_, err := DB.NewInsert().Model(model).ModelTableExpr(table).Returning("id").Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("error insertando: %w", err)
 	}
@@ -145,12 +136,12 @@ func Insert(ctx context.Context, model interface{}) error {
 }
 
 // InsertBatch inserta múltiples modelos en batch (más eficiente para muchos registros)
-func InsertBatch(ctx context.Context, models ...interface{}) error {
+func InsertBatch(ctx context.Context, table string, models ...interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
 
-	_, err := DB.NewInsert().Model(&models).Exec(ctx)
+	_, err := DB.NewInsert().Model(&models).ModelTableExpr(table).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("error insertando batch: %w", err)
 	}
@@ -158,20 +149,17 @@ func InsertBatch(ctx context.Context, models ...interface{}) error {
 	return nil
 }
 
-func CreateTable(ctx context.Context, tableName string, model interface{}) error {
+func CreateTable(ctx context.Context, model interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
 
-	// Inferir nombre de talba si no se proporciona
+	tableName := inferirTabla(model)
 	if tableName == "" {
-		tableName = inferTableName(model)
-		if tableName == "" {
-			return fmt.Errorf("nombre de tabla no proporcionado ni inferido del tag bun:table")
-		}
+		return fmt.Errorf("nombre de tabla no proporcionado mediante el tag correspondiente")
 	}
 
-	_, err := DB.NewCreateTable().Table(tableName).Model(model).IfNotExists().Exec(ctx)
+	_, err := DB.NewCreateTable().Model(model).IfNotExists().Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("error creando tabla %s: %w", tableName, err)
 	}
@@ -179,7 +167,7 @@ func CreateTable(ctx context.Context, tableName string, model interface{}) error
 	return nil
 }
 
-func inferTableName(model interface{}) string {
+func inferirTabla(model interface{}) string {
 	rt := reflect.TypeOf(model)
 	if rt == nil {
 		return ""
@@ -187,12 +175,9 @@ func inferTableName(model interface{}) string {
 	if rt.Kind() == reflect.Ptr {
 		rt = rt.Elem()
 	}
-
-	// Si es slice, ve al tipo del elemento
 	if rt.Kind() == reflect.Slice {
 		rt = rt.Elem()
 	}
-
 	if rt.Kind() != reflect.Struct {
 		return ""
 	}
@@ -208,5 +193,6 @@ func inferTableName(model interface{}) string {
 			return strings.TrimSpace(parts)
 		}
 	}
+
 	return ""
 }
