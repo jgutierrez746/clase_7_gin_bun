@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jgutierrez746/clase_7_gin_bun/config"
 	"github.com/jgutierrez746/clase_7_gin_bun/db"
-	"github.com/jgutierrez746/clase_7_gin_bun/modelos"
 	"github.com/jgutierrez746/clase_7_gin_bun/rutas"
 	"github.com/joho/godotenv"
 )
@@ -76,11 +73,25 @@ func main() {
 	}
 
 	// Crear tablas en BDD
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	/*ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := db.CreateTable(ctx, &modelos.TematicasModel{}); err != nil {
 		log.Fatal(err)
 	}
+	if err := db.CreateTable(ctx, &modelos.PeliculasModel{}); err != nil {
+		log.Fatal(err)
+	}
+	if err := db.CreateTable(ctx, &modelos.PeliculaTematicaModel{}); err != nil {
+		log.Fatal(err)
+	}
+
+	// Agregar FKs individuales (genérico: llama tantas como necesites)
+	if err := db.AgregarFK(ctx, config.Tablas["pt"], "p_id", config.Tablas["pl"], "id", "CASCADE"); err != nil {
+		panic(err)
+	}
+	if err := db.AgregarFK(ctx, config.Tablas["pt"], "tematica_id", config.Tablas["tm"], "id", "CASCADE"); err != nil {
+		panic(err)
+	}*/
 
 	// Configurar Gin en modo release (sin logs verbose)
 	gin.SetMode(gin.ReleaseMode)
@@ -92,14 +103,6 @@ func main() {
 	// Ruta para archivos estaticos
 	router.Static("/fotos", "./public/upload/fotos")
 
-	/*
-		// Ruta general sin grupo - varios ejemplos
-		router.GET("/hola", rutas.Saludar)
-		router.GET("/hola/:nombre", rutas.Saludar_con_nombre)
-		router.GET("/query-string", rutas.Query_string)
-		router.POST("/upload", rutas.Ejemplo_upload)
-	*/
-
 	// Grupo prefijo
 	apiV1 := router.Group(prefijo)
 	{
@@ -110,6 +113,12 @@ func main() {
 			tematicasGroup.POST("", rutas.CrearTematica)
 			tematicasGroup.PUT("/:id", rutas.EditarTematica)
 			tematicasGroup.DELETE("/:id", rutas.EliminarTematica)
+		}
+
+		peliculasGroup := apiV1.Group("/peliculas")
+		{
+			peliculasGroup.GET("", rutas.ConsultarPeliculas)
+			peliculasGroup.GET("/:id", rutas.ConsultarPeliculaPorId)
 		}
 		/*
 			// Grupo 1 users

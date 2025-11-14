@@ -21,7 +21,6 @@ func ConsultarTematicas(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	// tematicas := new(dto.AllTematicasSalida)a
 	var tematicas dto.TemticasAllSelect
 	if err := db.SelectAll(ctx, config.Tablas["tm"], &tematicas); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

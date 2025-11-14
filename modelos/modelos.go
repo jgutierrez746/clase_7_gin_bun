@@ -9,9 +9,30 @@ import (
 type TematicasModel struct {
 	bun.BaseModel `bun:"table:tematicas"`
 
-	ID        int64     `bun:",pk,autoincrement" json:"id,omitempty"`
-	Nombre    string    `bun:"nombre,notnull" json:"nombre" binding:"required"`
-	Slug      string    `bun:"slug,notnull,unique" json:"slug"`
-	CreatedAt time.Time `bun:",nullzero,type:timestamp,notnull,default:current_timestamp" json:"created_at,omitempty"`
-	UpdatedAt time.Time `bun:",nullzero,type:timestamp,notnull,default:current_timestamp,on_update:current_timestamp" json:"updated_at,omitempty"`
+	ID        int64     `bun:",pk,autoincrement"`
+	Nombre    string    `bun:",type:varchar(100),notnull"`
+	Slug      string    `bun:",type:varchar(100),notnull,unique"`
+	CreatedAt time.Time `bun:",type:timestamp,default:current_timestamp"`
+	UpdatedAt time.Time `bun:",type:timestamp,default:current_timestamp,on_update:current_timestamp"`
+}
+
+type PeliculasModel struct {
+	bun.BaseModel `bun:"table:peliculas"`
+
+	ID          int64     `bun:",pk,autoincrement"`
+	Anio        int       `bun:",type:smallint,nullzero"`
+	Titulo      string    `bun:",type:varchar(255),notnull"`
+	Slug        string    `bun:",type:varchar(255),notnull,unique"`
+	Descripcion string    `bun:",type:text"`
+	CreatedAt   time.Time `bun:",type:timestamp,default:current_timestamp"`
+	UpdatedAt   time.Time `bun:",type:timestamp,default:current_timestamp,on_update:current_timestamp"`
+}
+
+type PeliculaTematicaModel struct {
+	bun.BaseModel `bun:"table:pelicula_tematicas"`
+
+	PID        int64     `bun:"p_id,pk"`        // FK a Peliculas.ID
+	TematicaID int64     `bun:"tematica_id,pk"` // FK a Tematicas.ID
+	Orden      int       `bun:",nullzero"`
+	CreatedAt  time.Time `bun:",type:timestamp,default:current_timestamp"`
 }

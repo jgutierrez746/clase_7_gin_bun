@@ -102,7 +102,7 @@ func Delete(ctx context.Context, table string, where string, args ...interface{}
 //   - where: "users.id > ?", 10
 //
 // Nota: El modelo (dest) debe mapear todos los campos de las tablas unidas.
-func SelectConJoin(ctx context.Context, mainTable string, joins []string, dest interface{}, where string, args ...interface{}) error {
+func SelectConJoin(ctx context.Context, mainTable string, joins, columnas []string, modelo interface{}, order string, where string, args ...interface{}) error {
 	if DB == nil {
 		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
@@ -112,12 +112,22 @@ func SelectConJoin(ctx context.Context, mainTable string, joins []string, dest i
 	for _, join := range joins {
 		q = q.Join(join)
 	}
+	// Agregar columnas dinamicamente.
+	for _, columna := range columnas {
+		q = q.ColumnExpr(columna)
+	}
 
 	// WHERE opcional.
 	if where != "" {
 		q = q.Where(where, args...)
 	}
-	return q.Scan(ctx, dest)
+
+	// Order opcional.
+	if order != "" {
+		q = q.OrderExpr(order)
+	}
+
+	return q.Scan(ctx, modelo)
 }
 
 // Insert inserta un modelo (struct) en la tabla (infiriendo del tag bun:table)
@@ -195,4 +205,38 @@ func inferirTabla(model interface{}) string {
 	}
 
 	return ""
+}
+
+// AgregarFk agrega una Fk a una tabla, se puede llamar cuantas veces sea necesario en caso de contener más de 1 fk en la tabla
+// - tableName: Tabla donde agregar la Fk
+// - fkCol: Columna en tableName que será la FK
+// - refTable: Tabla referenciada
+// - refCol: Columna en refTable (default: 'id')
+// - onDelete: Acción ON DELETE (default: 'CASCADE'; opciones: 'CASCADE', 'RESTRICT', 'SET NULL', etc.)
+func AgregarFK(ctx context.Context, tableName, fkCol, refTable, refCol, onDelete string) error {
+	if DB == nil {
+		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
+	}
+
+	if refCol == "" {
+		refCol = "id" // Default común
+	}
+	if onDelete == "" {
+		onDelete = "CASCADE"
+	}
+
+	// SQL dinámico para ALTER
+	sql := fmt.Sprintf(`
+		ALTER TABLE %s
+		ADD CONSTRAINT fk_%s_%s
+		FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE %s;
+	`, tableName, tableName, fkCol, fkCol, refTable, refCol, onDelete)
+
+	_, err := DB.ExecContext(ctx, sql)
+	if err != nil {
+		return fmt.Errorf("error agregando FK %s - > %s.%s: %w", fkCol, refTable, refCol, err)
+	}
+
+	log.Printf("FK agregada: %s.%s -> %s.%s (ON DELETE %s)", tableName, fkCol, refTable, refCol, onDelete)
+	return nil
 }
