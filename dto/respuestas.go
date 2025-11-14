@@ -18,7 +18,4 @@ type PeliculaJoinRow struct {
 	SlugTem    string
 	TCreatedAt time.Time
 	TUpdatedAt time.Time
-
-	// Pelicula_Tematicas
-	Orden int
 }
