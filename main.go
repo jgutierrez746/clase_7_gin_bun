@@ -73,25 +73,32 @@ func main() {
 	}
 
 	// Crear tablas en BDD
-	/*ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := db.CreateTable(ctx, &modelos.TematicasModel{}); err != nil {
-		log.Fatal(err)
-	}
-	if err := db.CreateTable(ctx, &modelos.PeliculasModel{}); err != nil {
-		log.Fatal(err)
-	}
-	if err := db.CreateTable(ctx, &modelos.PeliculaTematicaModel{}); err != nil {
-		log.Fatal(err)
-	}
+	/*
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+			if err := db.CreateTable(ctx, &modelos.TematicasModel{}); err != nil {
+				log.Fatal(err)
+			}
+			if err := db.CreateTable(ctx, &modelos.PeliculasModel{}); err != nil {
+				log.Fatal(err)
+			}
+			if err := db.CreateTable(ctx, &modelos.PeliculaTematicaModel{}); err != nil {
+				log.Fatal(err)
+			}
 
-	// Agregar FKs individuales (genérico: llama tantas como necesites)
-	if err := db.AgregarFK(ctx, config.Tablas["pt"], "p_id", config.Tablas["pl"], "id", "CASCADE"); err != nil {
-		panic(err)
-	}
-	if err := db.AgregarFK(ctx, config.Tablas["pt"], "tematica_id", config.Tablas["tm"], "id", "CASCADE"); err != nil {
-		panic(err)
-	}*/
+		if err := db.CreateTable(ctx, &modelos.PortadaPeliculaModel{}); err != nil {
+			log.Fatal(err)
+		}
+	*/
+
+	/*
+		// Agregar FKs individuales (genérico: llama tantas como necesites)
+		if err := db.AgregarFK(ctx, config.Tablas["pt"], "p_id", config.Tablas["pl"], "id", "CASCADE"); err != nil {
+			panic(err)
+		}
+		if err := db.AgregarFK(ctx, config.Tablas["pt"], "tematica_id", config.Tablas["tm"], "id", "CASCADE"); err != nil {
+			panic(err)
+		}*/
 
 	// Configurar Gin en modo release (sin logs verbose)
 	gin.SetMode(gin.ReleaseMode)
@@ -102,6 +109,7 @@ func main() {
 	// Definición de Rutas HTTP
 	// Ruta para archivos estaticos
 	router.Static("/fotos", "./public/upload/fotos")
+	router.Static("/imagenes", "./public/upload/portadas")
 
 	// Grupo prefijo
 	apiV1 := router.Group(prefijo)
@@ -132,9 +140,9 @@ func main() {
 
 			portadaPeliculaGroup := peliculasGroup.Group("/:id/portada")
 			{
-				portadaPeliculaGroup.GET("", nil)
-				portadaPeliculaGroup.POST("", nil)
-				portadaPeliculaGroup.DELETE("/:idf", nil)
+				portadaPeliculaGroup.GET("", rutas.ConsultarPortadasPelicula)
+				portadaPeliculaGroup.POST("", rutas.CrearPortada)
+				portadaPeliculaGroup.DELETE("/:idf", rutas.EliminarPortada)
 			}
 		}
 		/*

@@ -41,5 +41,8 @@ type PeliculaTematicaModel struct {
 type PortadaPeliculaModel struct {
 	bun.BaseModel `bun:"table:portada_pelicula"`
 
-	ID int64 `bun:",pk,autoincrement"`
+	ID            int64     `bun:",pk,autoincrement"`
+	PID           int64     `bun:"p_id"`
+	NombreArchivo string    `bun:"nombre_archivo"`
+	CreatedAt     time.Time `bun:",type:timestamp,default:current_timestamp"`
 }
