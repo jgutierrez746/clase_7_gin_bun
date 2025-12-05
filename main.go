@@ -119,6 +119,23 @@ func main() {
 		{
 			peliculasGroup.GET("", rutas.ConsultarPeliculas)
 			peliculasGroup.GET("/:id", rutas.ConsultarPeliculaPorId)
+			peliculasGroup.POST("", rutas.CrearPelicula)
+			peliculasGroup.PUT("/:id", rutas.EditarPelicula)
+			peliculasGroup.DELETE("/:id", rutas.EliminarPelicula)
+
+			tematicasPeliculaGroup := peliculasGroup.Group("/:id/tematicas")
+			{
+				tematicasPeliculaGroup.GET("", rutas.ConsultarTematicasPelicula)
+				tematicasPeliculaGroup.POST("", rutas.CrearTematicasPelicula)
+				tematicasPeliculaGroup.DELETE("/:idt", rutas.EliminarTematicaPelicula)
+			}
+
+			portadaPeliculaGroup := peliculasGroup.Group("/:id/portada")
+			{
+				portadaPeliculaGroup.GET("", nil)
+				portadaPeliculaGroup.POST("", nil)
+				portadaPeliculaGroup.DELETE("/:idf", nil)
+			}
 		}
 		/*
 			// Grupo 1 users

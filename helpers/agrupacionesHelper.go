@@ -1,10 +1,6 @@
 package helpers
 
-import (
-	"github.com/jgutierrez746/clase_7_gin_bun/dto"
-)
-
-func AgruparPeliculas(rows []dto.PeliculaJoinRow) []dto.PeliculaSelectDTO {
+/*func AgruparPeliculas(rows []dto.PeliculaJoinRow) []dto.PeliculaSelectDTO {
 	peliculasMap := make(map[int64]*dto.PeliculaSelectDTO)
 
 	for _, r := range rows {
@@ -16,6 +12,7 @@ func AgruparPeliculas(rows []dto.PeliculaJoinRow) []dto.PeliculaSelectDTO {
 				Titulo:      r.Titulo,
 				Slug:        r.Slug,
 				Descripcion: r.Descripcion,
+				Director:    r.Director,
 				CreatedAt:   r.CreatedAt,
 				UpdatedAt:   r.UpdatedAt,
 				Tematicas:   []dto.TematicasSelectOne{},
@@ -40,3 +37,4 @@ func AgruparPeliculas(rows []dto.PeliculaJoinRow) []dto.PeliculaSelectDTO {
 	}
 	return peliculas
 }
+*/

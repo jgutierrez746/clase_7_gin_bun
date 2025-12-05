@@ -146,17 +146,19 @@ func Insert(ctx context.Context, table string, model interface{}) error {
 }
 
 // InsertBatch inserta múltiples modelos en batch (más eficiente para muchos registros)
-func InsertBatch(ctx context.Context, table string, models ...interface{}) error {
+func InsertBatch[T any](ctx context.Context, table string, models []T) (int64, error) {
 	if DB == nil {
-		return fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
+		return 0, fmt.Errorf("DB no inicializada") // Se debe llamar a InitDB primero si este error ocurre.
 	}
 
-	_, err := DB.NewInsert().Model(&models).ModelTableExpr(table).Exec(ctx)
+	res, err := DB.NewInsert().Model(&models).ModelTableExpr(table).Exec(ctx)
 	if err != nil {
-		return fmt.Errorf("error insertando batch: %w", err)
+		return 0, fmt.Errorf("error insertando batch: %w", err)
 	}
-	log.Printf("Batch de %d registros insertado exitosamente.", len(models))
-	return nil
+
+	filas, _ := res.RowsAffected()
+	log.Printf("Batch de %d registros insertado exitosamente.", filas)
+	return filas, nil
 }
 
 func CreateTable(ctx context.Context, model interface{}) error {

@@ -24,6 +24,7 @@ type PeliculasModel struct {
 	Titulo      string    `bun:",type:varchar(255),notnull"`
 	Slug        string    `bun:",type:varchar(255),notnull,unique"`
 	Descripcion string    `bun:",type:text"`
+	Director    string    `bun:",type:varchar(100),notnull"`
 	CreatedAt   time.Time `bun:",type:timestamp,default:current_timestamp"`
 	UpdatedAt   time.Time `bun:",type:timestamp,default:current_timestamp,on_update:current_timestamp"`
 }
@@ -35,4 +36,10 @@ type PeliculaTematicaModel struct {
 	TematicaID int64     `bun:"tematica_id,pk"` // FK a Tematicas.ID
 	Orden      int       `bun:",nullzero"`
 	CreatedAt  time.Time `bun:",type:timestamp,default:current_timestamp"`
+}
+
+type PortadaPeliculaModel struct {
+	bun.BaseModel `bun:"table:portada_pelicula"`
+
+	ID int64 `bun:",pk,autoincrement"`
 }

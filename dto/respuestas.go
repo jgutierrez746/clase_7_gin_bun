@@ -9,6 +9,7 @@ type PeliculaJoinRow struct {
 	Titulo      string
 	Slug        string
 	Descripcion string
+	Director    string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 
@@ -18,4 +19,15 @@ type PeliculaJoinRow struct {
 	SlugTem    string
 	TCreatedAt time.Time
 	TUpdatedAt time.Time
+
+	// Pelicula_Tematicas
+	Orden int
+}
+
+type TematicasPeliculaJoinRow struct {
+	// Temática
+	Nombre string
+
+	// Pelicula_Tematicas
+	Orden int
 }
