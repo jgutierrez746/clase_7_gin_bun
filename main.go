@@ -34,7 +34,7 @@ func main() {
 
 	// Cargar variables de entorno desde -env
 	if err := godotenv.Load(); err != nil {
-		log.Println("No se encontró .env, usando valores por defeto")
+		log.Println("No se encontró .env, usando valores por defecto")
 	}
 
 	// Obtener puerto de .env o default 8085
