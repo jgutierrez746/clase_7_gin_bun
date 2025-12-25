@@ -31,8 +31,3 @@ type UsuarioUpdate struct {
 	PerfilID  int64     `json:"perfil_id,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
-
-type LoginDTO struct {
-	Correo   string `json:"correo" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}

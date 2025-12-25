@@ -14,19 +14,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-/*
-func adminMiddleware(c *gin.Context) {
-	if c.GetHeader("Authorization") != "admin-token" { // ejmplo de token
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"mensaje": "Acceso denegado",
-		})
-		c.Abort()
-		return
-	}
-	c.Next()
-}
-*/
-
 var prefijo = "/api/v1"
 
 func main() {

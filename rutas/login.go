@@ -33,6 +33,9 @@ func Login(c *gin.Context) {
 	// Para mayor seguridad usamos un struct ad-hoc o reutilizamos uno que tenga los campos db necesarios
 	type UsuarioLogin struct {
 		ID       int64  `bun:"id"`
+		Nombre   string `bun:"nombre"`
+		Correo   string `bun:"correo"`
+		Telefono string `bun:"telefono"`
 		Password string `bun:"password"`
 		PerfilID int64  `bun:"perfil_id"`
 	}
