@@ -46,3 +46,21 @@ type PortadaPeliculaModel struct {
 	NombreArchivo string    `bun:"nombre_archivo"`
 	CreatedAt     time.Time `bun:",type:timestamp,default:current_timestamp"`
 }
+
+type PerfilesModel struct {
+	bun.BaseModel `bun:"table:perfiles"`
+
+	ID     int64  `bun:",pk,autoincrement"`
+	Nombre string `bun:"nombre,notnull"`
+}
+
+type UsuariosModel struct {
+	bun.BaseModel `bun:"table:usuarios"`
+
+	ID       int64  `bun:",pk,autoincrement"`
+	Nombre   string `bun:"nombre,notnull"`
+	Correo   string `bun:"correo,notnull"`
+	Telefono string `bun:"telefono,notnull"`
+	Password string `bun:"password,notnull"`
+	PerfilID int64  `bun:"perfil_id,notnull"`
+}

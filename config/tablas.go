@@ -5,4 +5,6 @@ var Tablas = map[string]string{
 	"pl": "peliculas",
 	"pt": "pelicula_tematicas",
 	"pp": "portada_pelicula",
+	"p":  "perfiles",
+	"u":  "usuarios",
 }

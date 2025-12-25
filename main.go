@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jgutierrez746/clase_7_gin_bun/config"
 	"github.com/jgutierrez746/clase_7_gin_bun/db"
+	auth "github.com/jgutierrez746/clase_7_gin_bun/jwt"
 	"github.com/jgutierrez746/clase_7_gin_bun/rutas"
 	"github.com/joho/godotenv"
 )
@@ -76,29 +77,38 @@ func main() {
 	/*
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-			if err := db.CreateTable(ctx, &modelos.TematicasModel{}); err != nil {
-				log.Fatal(err)
-			}
-			if err := db.CreateTable(ctx, &modelos.PeliculasModel{}); err != nil {
-				log.Fatal(err)
-			}
-			if err := db.CreateTable(ctx, &modelos.PeliculaTematicaModel{}); err != nil {
-				log.Fatal(err)
-			}
-
+		if err := db.CreateTable(ctx, &modelos.TematicasModel{}); err != nil {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable(ctx, &modelos.PeliculasModel{}); err != nil {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable(ctx, &modelos.PeliculaTematicaModel{}); err != nil {
+			log.Fatal(err)
+		}
 		if err := db.CreateTable(ctx, &modelos.PortadaPeliculaModel{}); err != nil {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable(ctx, &modelos.PerfilesModel{}); err != nil {
+			log.Fatal(err)
+		}
+		if err := db.CreateTable(ctx, &modelos.UsuariosModel{}); err != nil {
 			log.Fatal(err)
 		}
 	*/
 
+	// Agregar FKs individuales (genérico: llama tantas como necesites)
 	/*
-		// Agregar FKs individuales (genérico: llama tantas como necesites)
 		if err := db.AgregarFK(ctx, config.Tablas["pt"], "p_id", config.Tablas["pl"], "id", "CASCADE"); err != nil {
 			panic(err)
 		}
 		if err := db.AgregarFK(ctx, config.Tablas["pt"], "tematica_id", config.Tablas["tm"], "id", "CASCADE"); err != nil {
 			panic(err)
-		}*/
+		}
+		if err := db.AgregarFK(ctx, config.Tablas["u"], "perfil_id", config.Tablas["p"], "id", ""); err != nil {
+			panic(err)
+		}
+	*/
 
 	// Configurar Gin en modo release (sin logs verbose)
 	gin.SetMode(gin.ReleaseMode)
@@ -114,35 +124,66 @@ func main() {
 	// Grupo prefijo
 	apiV1 := router.Group(prefijo)
 	{
-		tematicasGroup := apiV1.Group("/tematicas")
-		{
-			tematicasGroup.GET("", rutas.ConsultarTematicas)
-			tematicasGroup.GET("/:id", rutas.ConsultarTematicasPorId)
-			tematicasGroup.POST("", rutas.CrearTematica)
-			tematicasGroup.PUT("/:id", rutas.EditarTematica)
-			tematicasGroup.DELETE("/:id", rutas.EliminarTematica)
-		}
+		apiV1.POST("/login", rutas.Login) // Ruta publica
 
-		peliculasGroup := apiV1.Group("/peliculas")
+		// Grupo protegido general
+		protected := apiV1.Group("/")
+		protected.Use(auth.AuthMiddleware()) // Middleware de autenticación global para estos grupos
 		{
-			peliculasGroup.GET("", rutas.ConsultarPeliculas)
-			peliculasGroup.GET("/:id", rutas.ConsultarPeliculaPorId)
-			peliculasGroup.POST("", rutas.CrearPelicula)
-			peliculasGroup.PUT("/:id", rutas.EditarPelicula)
-			peliculasGroup.DELETE("/:id", rutas.EliminarPelicula)
 
-			tematicasPeliculaGroup := peliculasGroup.Group("/:id/tematicas")
+			tematicasGroup := protected.Group("/tematicas")
 			{
-				tematicasPeliculaGroup.GET("", rutas.ConsultarTematicasPelicula)
-				tematicasPeliculaGroup.POST("", rutas.CrearTematicasPelicula)
-				tematicasPeliculaGroup.DELETE("/:idt", rutas.EliminarTematicaPelicula)
+				tematicasGroup.GET("", rutas.ConsultarTematicas)
+				tematicasGroup.GET("/:id", rutas.ConsultarTematicasPorId)
+				tematicasGroup.POST("", rutas.CrearTematica)
+				tematicasGroup.PUT("/:id", rutas.EditarTematica)
+				tematicasGroup.DELETE("/:id", rutas.EliminarTematica)
 			}
 
-			portadaPeliculaGroup := peliculasGroup.Group("/:id/portada")
+			peliculasGroup := protected.Group("/peliculas")
 			{
-				portadaPeliculaGroup.GET("", rutas.ConsultarPortadasPelicula)
-				portadaPeliculaGroup.POST("", rutas.CrearPortada)
-				portadaPeliculaGroup.DELETE("/:idf", rutas.EliminarPortada)
+				peliculasGroup.GET("", rutas.ConsultarPeliculas)
+				peliculasGroup.GET("/:id", rutas.ConsultarPeliculaPorId)
+				peliculasGroup.POST("", rutas.CrearPelicula)
+				peliculasGroup.PUT("/:id", rutas.EditarPelicula)
+				peliculasGroup.DELETE("/:id", rutas.EliminarPelicula)
+
+				tematicasPeliculaGroup := peliculasGroup.Group("/:id/tematicas")
+				{
+					tematicasPeliculaGroup.GET("", rutas.ConsultarTematicasPelicula)
+					tematicasPeliculaGroup.POST("", rutas.CrearTematicasPelicula)
+					tematicasPeliculaGroup.DELETE("/:idt", rutas.EliminarTematicaPelicula)
+				}
+
+				portadaPeliculaGroup := peliculasGroup.Group("/:id/portada")
+				{
+					portadaPeliculaGroup.GET("", rutas.ConsultarPortadasPelicula)
+					portadaPeliculaGroup.POST("", rutas.CrearPortada)
+					portadaPeliculaGroup.DELETE("/:idf", rutas.EliminarPortada)
+				}
+			}
+
+			// Grupo Admin
+			adminGroup := protected.Group("/")
+			adminGroup.Use(auth.AdminMiddleware())
+			{
+				perfilesGroup := adminGroup.Group("/perfiles")
+				{
+					perfilesGroup.GET("", rutas.ConsultarPerfiles)
+					perfilesGroup.GET("/:id", rutas.ConsultarPerfilPorId)
+					perfilesGroup.POST("", rutas.CrearPerfil)
+					perfilesGroup.PUT("/:id", rutas.EditarPerfil)
+					perfilesGroup.DELETE("/:id", rutas.EliminarPerfil)
+				}
+
+				usuariosGroup := adminGroup.Group("/usuarios")
+				{
+					usuariosGroup.GET("", rutas.ConsultarUsuarios)
+					usuariosGroup.GET("/:id", rutas.ConsultarUsuarioPorId)
+					usuariosGroup.POST("", rutas.CrearUsuario)
+					usuariosGroup.PUT("/:id", rutas.EditarUsuario)
+					usuariosGroup.DELETE("/:id", rutas.EliminarUsuario)
+				}
 			}
 		}
 		/*
